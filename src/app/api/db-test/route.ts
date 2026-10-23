@@ -2,15 +2,19 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 
 export async function GET() {
-  try {
-    const result = await db.query(
-      "SELECT current_database() AS database, NOW() AS server_time",
+  if (process.env.NODE_ENV !== "development") {
+    return NextResponse.json(
+      { success: false, message: "Endpoint tidak tersedia." },
+      { status: 404 },
     );
+  }
+
+  try {
+    await db.query("SELECT 1");
+
     return NextResponse.json({
       success: true,
-      message: " connection PostgresSQL successful",
-      database: result.rows[0].database,
-      server_time: result.rows[0].server_time,
+      message: "Koneksi PostgreSQL berhasil.",
     });
   } catch (error) {
     console.error("Database connection error:", error);
@@ -18,7 +22,7 @@ export async function GET() {
     return NextResponse.json(
       {
         success: false,
-        message: "Koneksi database PostgresSQL gagal. Periksa konfigurasi.",
+        message: "Koneksi database gagal. Periksa konfigurasi.",
       },
       { status: 500 },
     );
