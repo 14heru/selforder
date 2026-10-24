@@ -17,7 +17,9 @@ export const metadata: Metadata = {
   description: "Pesan Menu Dengan Mudah Melalui QR Code Meja",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
   return (
     <html
       lang="en"

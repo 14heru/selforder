@@ -20,6 +20,9 @@ export default function MenuClient({ categories, products }: MenuClientProps) {
   const [search, setSearch] = useState("");
   const [cart, setCart] = useState<Record<number, number>>({});
   const [showCart, setShowCart] = useState(false);
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [checkoutMessage, setCheckoutMessage] = useState("");
+  const [checkoutError, setCheckoutError] = useState(false);
 
   const filteredProducts = useMemo(() => {
     return products.filter((product) => {
@@ -61,6 +64,52 @@ export default function MenuClient({ categories, products }: MenuClientProps) {
     });
   }
 
+  async function handleCheckout() {
+    if (isCheckingOut || cartItems.length === 0) {
+      return;
+    }
+
+    setIsCheckingOut(true);
+    setCheckoutMessage("");
+    setCheckoutError(false);
+
+    try {
+      const response = await fetch("/api/orders", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          tableId: 1,
+          items: cartItems.map((product) => ({
+            productId: product.id,
+            quantity: cart[product.id] ?? 0,
+          })),
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || "Pesanan gagal dikirim ke server.");
+      }
+
+      setCheckoutMessage(
+        `Pesanan berhasil dibuat! Nomor pesanan: ${result.order.orderNumber}`,
+      );
+      setCart({});
+    } catch (error) {
+      setCheckoutError(true);
+      setCheckoutMessage(
+        error instanceof Error
+          ? error.message
+          : "Terjadi kesalahan saat membuat pesanan.",
+      );
+    } finally {
+      setIsCheckingOut(false);
+    }
+  }
+
   return (
     <main className="min-h-screen bg-[#faf9f6] pb-28 text-[#24251f]">
       {/* Header */}
@@ -82,7 +131,7 @@ export default function MenuClient({ categories, products }: MenuClientProps) {
             <span aria-hidden="true">⌖</span>
             <div>
               <p className="text-[10px] text-stone-500">MEJA ANDA</p>
-              <p className="text-sm font-semibold">Meja 08</p>
+              <p className="text-sm font-semibold">Meja 01</p>
             </div>
           </div>
         </div>
@@ -356,7 +405,7 @@ export default function MenuClient({ categories, products }: MenuClientProps) {
                   Keranjang kamu
                 </h2>
                 <p className="mt-1 text-sm text-stone-500">
-                  Meja 08 · {cartCount} item
+                  Meja 01 · {cartCount} item
                 </p>
               </div>
               <button
@@ -419,19 +468,28 @@ export default function MenuClient({ categories, products }: MenuClientProps) {
                   {formatRupiah(cartTotal)}
                 </span>
               </div>
+
               <button
-                onClick={() => {
-                  alert(
-                    "Demo UI: checkout akan dihubungkan ke backend pada tahap berikutnya.",
-                  );
-                }}
-                className="mt-5 w-full rounded-2xl bg-[#245c43] px-5 py-4 text-sm font-semibold text-white transition hover:bg-[#193f2e]"
+                onClick={handleCheckout}
+                disabled={isCheckingOut || cartItems.length === 0}
+                className="mt-5 w-full rounded-2xl bg-[#245c43] px-5 py-4 text-sm font-semibold text-white transition hover:bg-[#193f2e] disabled:cursor-not-allowed disabled:opacity-60"
               >
-                Lanjut ke checkout →
+                {isCheckingOut
+                  ? "Memproses pesanan..."
+                  : "Lanjut ke checkout →"}
               </button>
-              <p className="mt-3 text-center text-xs text-stone-400">
-                Demo UI · Pesanan belum dikirim ke server
-              </p>
+
+              {checkoutMessage && (
+                <p
+                  role="status"
+                  aria-live="polite"
+                  className={`mt-3 text-center text-xs ${
+                    checkoutError ? "text-red-600" : "text-green-700"
+                  }`}
+                >
+                  {checkoutMessage}
+                </p>
+              )}
             </div>
           </section>
         </div>
