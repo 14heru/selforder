@@ -7,7 +7,7 @@ type OrderItemInput = {
 };
 
 type CreateOrderInput = {
-  tableId: number;
+  qrToken: string;
   items: OrderItemInput[];
   notes?: string;
 };
@@ -37,14 +37,21 @@ export async function POST(request: Request) {
 
   const input = body as Partial<CreateOrderInput>;
 
+  const uuidPattern =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
   if (
-    !isPositiveInteger(input.tableId) ||
+    typeof input.qrToken !== "string" ||
+    !uuidPattern.test(input.qrToken.trim()) ||
     !Array.isArray(input.items) ||
     input.items.length === 0 ||
     input.items.length > 50
   ) {
     return NextResponse.json(
-      { success: false, message: "Meja atau item pesanan tidak valid." },
+      {
+        success: false,
+        message: "Token QR meja atau item pesanan tidak valid.",
+      },
       { status: 400 },
     );
   }
@@ -95,10 +102,11 @@ export async function POST(request: Request) {
 
     const tableResult = await client.query(
       `SELECT id
-       FROM restaurant_tables
-       WHERE id = $1 AND is_active = TRUE
-       FOR SHARE`,
-      [input.tableId],
+      FROM restaurant_tables
+      WHERE qr_token = $1::uuid
+      AND is_active = TRUE
+      FOR SHARE`,
+      [input.qrToken.trim()],
     );
 
     if (tableResult.rowCount !== 1) {
@@ -106,7 +114,10 @@ export async function POST(request: Request) {
       transactionStarted = false;
 
       return NextResponse.json(
-        { success: false, message: "Meja tidak ditemukan atau tidak aktif." },
+        {
+          success: false,
+          message: "QR meja tidak valid atau meja tidak aktif.",
+        },
         { status: 400 },
       );
     }
@@ -193,16 +204,22 @@ export async function POST(request: Request) {
       .slice(0, 8)
       .toUpperCase()}`;
 
+    const tableId = Number(tableResult.rows[0].id);
+
+    if (!Number.isSafeInteger(tableId) || tableId <= 0) {
+      throw new Error("ID meja dari database tidak valid.");
+    }
+
     const orderResult = await client.query(
       `INSERT INTO orders (
-         order_number,
-         table_id,
-         total_amount,
-         notes
-       )
-       VALUES ($1, $2, $3, $4)
-       RETURNING id, order_number, status, total_amount, created_at`,
-      [orderNumber, input.tableId, totalAmount, notes],
+      order_number,
+      table_id,
+      total_amount,
+      notes
+      )
+      VALUES ($1, $2, $3, $4)
+      RETURNING id, order_number, status, total_amount, created_at`,
+      [orderNumber, tableId, totalAmount, notes],
     );
 
     const order = orderResult.rows[0];

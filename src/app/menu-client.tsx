@@ -6,6 +6,8 @@ import type { Product } from "@/data/products";
 type MenuClientProps = {
   categories: string[];
   products: Product[];
+  tableNumber?: string;
+  qrToken?: string;
 };
 
 const formatRupiah = (price: number) =>
@@ -15,7 +17,12 @@ const formatRupiah = (price: number) =>
     maximumFractionDigits: 0,
   }).format(price);
 
-export default function MenuClient({ categories, products }: MenuClientProps) {
+export default function MenuClient({
+  categories,
+  products,
+  tableNumber,
+  qrToken,
+}: MenuClientProps) {
   const [activeCategory, setActiveCategory] = useState("Semua");
   const [search, setSearch] = useState("");
   const [cart, setCart] = useState<Record<number, number>>({});
@@ -69,6 +76,12 @@ export default function MenuClient({ categories, products }: MenuClientProps) {
       return;
     }
 
+    if (!qrToken?.trim()) {
+      setCheckoutError(true);
+      setCheckoutMessage("Silakan pindai QR code meja untuk membuat pesanan.");
+      return;
+    }
+
     setIsCheckingOut(true);
     setCheckoutMessage("");
     setCheckoutError(false);
@@ -80,7 +93,7 @@ export default function MenuClient({ categories, products }: MenuClientProps) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          tableId: 1,
+          qrToken,
           items: cartItems.map((product) => ({
             productId: product.id,
             quantity: cart[product.id] ?? 0,
@@ -131,7 +144,9 @@ export default function MenuClient({ categories, products }: MenuClientProps) {
             <span aria-hidden="true">⌖</span>
             <div>
               <p className="text-[10px] text-stone-500">MEJA ANDA</p>
-              <p className="text-sm font-semibold">Meja 01</p>
+              <p className="text-sm font-semibold">
+                {tableNumber ?? "Pindai QR Meja"}
+              </p>
             </div>
           </div>
         </div>
@@ -405,7 +420,7 @@ export default function MenuClient({ categories, products }: MenuClientProps) {
                   Keranjang kamu
                 </h2>
                 <p className="mt-1 text-sm text-stone-500">
-                  Meja 01 · {cartCount} item
+                  {tableNumber ?? "Pindai QR Meja"} · {cartCount} item
                 </p>
               </div>
               <button
