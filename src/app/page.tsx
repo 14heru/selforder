@@ -1,7 +1,13 @@
 import { Suspense } from "react";
 import MenuData from "@/app/menu-data";
 
-export default function Home() {
+type HomeProps = {
+  searchParams: Promise<{
+    qr?: string | string[];
+  }>;
+};
+
+export default function Home({ searchParams }: HomeProps) {
   return (
     <Suspense
       fallback={
@@ -10,7 +16,7 @@ export default function Home() {
         </main>
       }
     >
-      <MenuData />
+      <MenuData searchParams={searchParams} />
     </Suspense>
   );
 }

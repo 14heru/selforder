@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import type { Product } from "@/data/products";
 
 type MenuClientProps = {
@@ -23,6 +24,7 @@ export default function MenuClient({
   tableNumber,
   qrToken,
 }: MenuClientProps) {
+  const router = useRouter();
   const [activeCategory, setActiveCategory] = useState("Semua");
   const [search, setSearch] = useState("");
   const [cart, setCart] = useState<Record<number, number>>({});
@@ -106,11 +108,9 @@ export default function MenuClient({
       if (!response.ok || !result.success) {
         throw new Error(result.message || "Pesanan gagal dikirim ke server.");
       }
-
-      setCheckoutMessage(
-        `Pesanan berhasil dibuat! Nomor pesanan: ${result.order.orderNumber}`,
-      );
+      
       setCart({});
+      router.push(`/order/${result.order.orderNumber}`);
     } catch (error) {
       setCheckoutError(true);
       setCheckoutMessage(
