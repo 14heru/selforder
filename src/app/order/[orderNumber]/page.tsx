@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
+import CopyOrderNumberButton from "./CopyOrderNumberButton";
 
 type OrderPageProps = {
   params: Promise<{
@@ -257,13 +258,7 @@ async function OrderConfirmationContent({ params }: OrderPageProps) {
                 Kembali ke Menu
               </Link>
 
-              <button
-                type="button"
-                onClick={undefined}
-                className="rounded-2xl border border-stone-200 bg-white px-5 py-4 text-sm font-semibold text-stone-700 transition hover:bg-stone-50"
-              >
-                Pesanan Tersimpan
-              </button>
+              <CopyOrderNumberButton orderNumber={order.order_number} />
             </div>
 
             <p className="mt-6 text-center text-xs leading-5 text-stone-400">
